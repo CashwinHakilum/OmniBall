@@ -122,7 +122,7 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 		JFrame frame = new JFrame("Omniball [ALPHA]");
 		frame.setBackground(Color.RED);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setResizable(false);
+        frame.setResizable(true);
         frame.setIconImage(new ImageIcon("src/img/icon.jpg").getImage());
         frame.add(new Main());
         frame.setCursor(cursor);
@@ -148,7 +148,7 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 	private ArrayList<Body> spawns = new ArrayList<Body>();
 	
 	private IntroScreen is;
-	private double scaleFactor = 1;
+
 
 	private World world;
 	private AABB worldBounds;
@@ -163,6 +163,9 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 	private Body wall2;
 	private Body wall3;
 	private Body wall4;
+	
+	private ArrayList<Body> platform;
+	private ArrayList<Body> walls;
 	
 	private CircleDef wheelDef; // Define shape properties itself
 	private BodyDef wheelBodyDef; // Define location in world + interaction
@@ -181,7 +184,11 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 	private int lightness = 1;
 	private int wheelHP = 100;
 	private int wheelMaxHP = 100;
-	private int recoveryIters = 0;
+	private int recoveryItersHP = 0;
+	private int wheelSP = 100;
+	private int wheelMaxSP = 100;
+	private int recoveryItersSP = 0;
+	private int fireDelay = 5;
 
 	private int flickerIters;
 	
@@ -189,7 +196,7 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 	private BodyDef bulletBodyDef;
 	private ArrayList<Body> bullets;
 	private int nBullets;
-	private final int MAX_BULLETS = 10;
+	private final int MAX_BULLETS = 25;
 	
 	private ArrayList<Body> targets;
 	private CircleDef targetDef;
@@ -228,20 +235,33 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 
 	private int cameraX;
 	private int cameraY;
+	private double scaleFactor = 0.5;
 	
 	private Clip clip;
 	private AudioInputStream ais;
 	
+	private int waveNum;
+	private int maxSpawns;
+	private int nSpawns;
+	private int maxSpeed;
+	private int score;
+	
 	public Main()
 	{
+		waveNum = 1;
+		maxSpawns = 10;
+		nSpawns = 10;
+		maxSpeed = 50;
+		score = 0;
+		
 		setBackground(Color.black);
 		
 		moveLeft = false;
 		moveRight = false;
 		
 		worldBounds = new AABB();
-		worldBounds.lowerBound.set(-10000.0f, -10000.0f);
-		worldBounds.upperBound.set(10000.0f, 10000.0f);
+		worldBounds.lowerBound.set(-5000.0f, -5000.0f);
+		worldBounds.upperBound.set(5000.0f, 5000.0f);
 		
 		Vec2 gravity = new Vec2(0.0f, 10.0f);
 		
@@ -259,7 +279,7 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 		wheelDef.restitution = 0.0f;
 		wheelDef.density = 1000.0f;
 		
-		angle = 0;
+		angle = 0; 
 		
 		wheelBodyDef.fixedRotation = true;
 		wheelBodyDef.angle = (int) angle;
@@ -281,17 +301,18 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 		float smoothSpeedX = 0;
 		float smoothSpeedY = 0;
 		
-		for (int i = 1; i <= 10; i++)
+		for (int i = 1; i <= maxSpawns; i++)
 		{
-			spawnSpawns();
+			spawnSpawn();
+			nSpawns++;
 		}
 		
 		PolygonDef platformDef = new PolygonDef();
 		BodyDef platformBodyDef = new BodyDef();
 		
 		platformDef.density = 0.0f; // Stationary body, not affected by gravity
-		platformDef.friction = 0.25f;
-		platformDef.restitution = 0.2f;
+		platformDef.friction = 0.1f;
+		platformDef.restitution = 0.0f;
 		
 		platformDef.setAsBox(2000.0f, 50.0f);
 		platformBodyDef.position.set(2000, 700);
@@ -302,35 +323,41 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 		platform1.setBullet(false);
 		
 		platformDef.setAsBox(200.0f, 50.0f);
-		platformBodyDef.position.set(2000, -200);
+		//platformBodyDef.position.set(2000, -200);
+		platformBodyDef.position.set(2000, -2000);
 		
 		platform2 = world.createBody(platformBodyDef);
 		platform2.createShape(platformDef);
 		platform2.setMassFromShapes();
 		platform2.setBullet(false);
 		
-		platformBodyDef.position.set(1600, -100);
+		//platformBodyDef.position.set(1600, -100);
+		platformBodyDef.position.set(1600, -2000);
 		
 		platform3 = world.createBody(platformBodyDef);
 		platform3.createShape(platformDef);
 		platform3.setMassFromShapes();
 		platform3.setBullet(false);
 		
-		platformBodyDef.position.set(1200, 0);
+		
+		//platformBodyDef.position.set(1200, 0);
+		platformBodyDef.position.set(1200, -2000);
 		
 		platform4 = world.createBody(platformBodyDef);
 		platform4.createShape(platformDef);
 		platform4.setMassFromShapes();
 		platform4.setBullet(false);
 
-		platformBodyDef.position.set(2400, -100);
+		//platformBodyDef.position.set(2400, -100);
+		platformBodyDef.position.set(2400, -2000);
 		
 		platform5 = world.createBody(platformBodyDef);
 		platform5.createShape(platformDef);
 		platform5.setMassFromShapes();
 		platform5.setBullet(false);
 
-		platformBodyDef.position.set(2800, 0);
+		//platformBodyDef.position.set(2800, 0);
+		platformBodyDef.position.set(2800, -2000);
 		
 		platform6 = world.createBody(platformBodyDef);
 		platform6.createShape(platformDef);
@@ -341,8 +368,8 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 		BodyDef wallBodyDef = new BodyDef();
 		
 		wallDef.density = 0.0f;
-		wallDef.friction = 0.25f;
-		wallDef.restitution = 0.2f;
+		wallDef.friction = 0.1f;
+		wallDef.restitution = 0.0f;
 		wallDef.setAsBox(50.0f, 200.0f);
 		
 		wallBodyDef.position.set(275, 450);
@@ -467,7 +494,7 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 		g2.setColor(Color.RED);
 		g2.drawRect(-10000, -10000, 20000, 20000);
 		
-		g2.setColor(new Color(0, 0, 25));
+		g2.setColor(new Color(0, 25, 0));
 		g2.fillRect(0, -300, 4000, 1000);
 		
 		g2.setColor(new Color(25, 25, 25));
@@ -481,7 +508,7 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 			g2.drawLine(-10000, i * 50, 10000, i * 50);
 		}
 		
-		g2.setColor(new Color(0, 0, 75));
+		g2.setColor(new Color(0, 75, 0));
 		for (int i = 0; i <= 160; i++)
 		{
 			g2.drawLine(i * 25, -300, i * 25, 750);
@@ -514,7 +541,7 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 					g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) d));
 				}
 				
-				g2.fillRect(-10, -10, 20, 20);
+				g2.fillRect(-20, -20, 40, 40);
 			}
 			
 			g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.00f));
@@ -524,7 +551,7 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 			g2.setTransform(t);
 			g2.translate(spawn.getWorldCenter().x, spawn.getWorldCenter().y);
 			
-			g2.fillRect(-10, -10, 20, 20);
+			g2.fillRect(-20, -20, 40, 40);
 		}
 		
 		g2.setColor(Color.RED);
@@ -607,6 +634,7 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 		{
 			flickerIters = 0;
 		}
+		
 		
 		for (Body target : targets)
 		{
@@ -691,7 +719,7 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 		t.setToTranslation(cameraX, cameraY);
 		t.scale(scaleFactor, scaleFactor);
 		g2.setTransform(t);
-
+/*
 		g2.translate(platform2.getWorldCenter().x, platform2.getWorldCenter().y);
 		g2.setColor(Color.BLACK);
 		g2.fillRect(-200, -50, 400, 100);
@@ -742,7 +770,7 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 		g2.setColor(Color.WHITE);
 		g2.drawRect(-200, -50, 400, 100);
 		g2.drawString("[platform]", -16, 5);
-		
+*/
 		if (mouseOnScreen)
 		{
 			t.setToIdentity();		
@@ -786,11 +814,11 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 		g2.fillRect(0, 0, 100, 150);
 		g2.setColor(Color.white);
 		g2.drawRect(0, 0, 100, 150);
-		g2.drawString("A: " + '\u221e' + "/" + '\u221e', 10, 20);
-		//g2.drawString(nBullets + "/" + MAX_BULLETS, 10, 20);
+		//g2.drawString("A: " + '\u221e' + "/" + '\u221e', 10, 20);
+		g2.drawString("A: " + nBullets + "/" + MAX_BULLETS, 10, 20);
 		if (nBullets < MAX_BULLETS)
 		{
-			g2.fillRect(10, 22, (int) (30 * (reloadIters / 15.0)), 1);
+			g2.fillRect(10, 22, (int) (60 * (reloadIters / 12.0)), 1);
 		}
 		
 		g2.drawString("P: (" + (int) wheelX + "," + (int) wheelY + ")", 10, 40);
@@ -806,6 +834,7 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 		g2.drawString("m: (" + mouseX + "," + mouseY + ")", 10, 100);
 		g2.drawString("mw: (" + mouseXOnWorld + "," + mouseYOnWorld + ")", 10, 120);
 		g2.drawString("HP: " + wheelHP + "/" + wheelMaxHP, 10, 140);
+		g2.drawString("SP: " + wheelSP + "/" + wheelMaxSP, 10, 160);
 		
 		if (tutKeyDown)
 		{
@@ -824,7 +853,7 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 			g2.drawString("ESC: Exit.", 10, this.getHeight() - 30);
 		}
 		
-		g2.drawString("OmniBall v0.9.0a | Developed by Ashwin Chakilum, a Freshman at UIUC, majoring in Computer Science ^_^", 10, this.getHeight() - 10);
+		g2.drawString("OmniBall v0.9.1a | Developed by Ashwin Chakilum, a Sophomore at UIUC, majoring in Computer Science ^_^", 10, this.getHeight() - 10);
 		
 		t.setToIdentity();
 		g2.setTransform(t);
@@ -840,7 +869,7 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 		world.step((float) (10.0 / (FPS * 1.0)), 5);
 		
 		speed =  (float) Math.sqrt(Math.pow(wheel.getLinearVelocity().x, 2) + Math.pow(wheel.getLinearVelocity().y, 2));
-		scaleFactor += (((1 / ((speed / 141.4) + 1)) - scaleFactor)) * 0.025 ;
+		scaleFactor += (((1 / ((speed / 141.4 / 2) + 1.5)) - scaleFactor)) * 0.01 ;
 		
 		smoothSpeedX += (wheel.getLinearVelocity().x - smoothSpeedX) / 0.5;
 		smoothSpeedY += (wheel.getLinearVelocity().y - smoothSpeedY) / 0.5;
@@ -938,7 +967,7 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 			if (wheel.isTouching(spawn))
 			{
 				wheelHP -= 10;
-				recoveryIters = 0;
+				recoveryItersHP = 0;
 			}
 			if (isOutOfBounds(spawn) || wheel.isTouching(spawn))
 			{
@@ -956,7 +985,7 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 			reloadIters++;
 		}
 		
-		if (reloadIters >= 15)
+		if (reloadIters >= 16)
 		{
 			if (nBullets < MAX_BULLETS)
 			{
@@ -982,6 +1011,7 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 					doublePressDetected = false;
 					lastKeyPressed = 0;
 					playSound("dash.wav");
+					wheelSP -= 10;
 				}
 				wheel.applyImpulse(new Vec2(-6000000.0f, 0.0f), wheel.getLocalCenter());
 			}
@@ -1000,6 +1030,7 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 					doublePressDetected = false;
 					lastKeyPressed = 0;
 					playSound("dash.wav");
+					wheelSP -= 10;
 				}
 				wheel.applyImpulse(new Vec2(6000000.0f, 0.0f), wheel.getLocalCenter());
 			}
@@ -1013,11 +1044,11 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 		
 		if (LmousePressed)
 		{
-			shootIters++;
-			if (shootIters % 4 == 0)
+			if (shootIters % fireDelay == 0)
 			{
 				shoot();
 			}
+			shootIters++;
 		}
 		else
 		{
@@ -1028,9 +1059,17 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 		
 		spawnTargets();
 		
-		if (spawns.size() <= 9)
+		if (spawns.size() <= 0)
 		{
-			spawnSpawns();
+			waveNum++;
+			maxSpeed += 10;
+			maxSpawns += 5;
+			nSpawns += 5;
+			
+			for (int i = 0; i < maxSpawns; i++)
+			{
+				spawnSpawn();
+			}
 		}
 		
 		if (!moveLeft && !moveRight)
@@ -1046,22 +1085,35 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 			
 		}
 		
+		// SPAWN MOVEMENT (DISPLACEMENT)
 		for (Body spawn : spawns)
 		{
 			double angle = Math.atan2(wheel.getWorldCenter().y - spawn.getWorldCenter().y , wheel.getWorldCenter().x - spawn.getWorldCenter().x);
-			spawn.applyForce(new Vec2((float) (1000 * Math.cos(angle)), (float) (1000 * Math.sin(angle)) - 500), spawn.getLocalCenter());
+			//spawn.applyForce(new Vec2((float) (maxSpeed * Math.cos(angle)), (float) (maxSpeed * Math.sin(angle)) - 500), spawn.getLocalCenter());
+			spawn.setLinearVelocity(new Vec2( (float) (maxSpeed * Math.cos(angle)), (float) (maxSpeed * Math.sin(angle))));
 		}
 		
-		if (recoveryIters < 60)
+		if (recoveryItersHP < 1) 
 		{
-			recoveryIters++;
+			recoveryItersHP++;
 		}
-
 		
-		if (recoveryIters >= 60 && wheelHP < wheelMaxHP)
+		if (recoveryItersSP < 1)
 		{
-			wheelHP++;
-			recoveryIters = 0;
+			recoveryItersSP++;
+		}
+		
+		
+		if (recoveryItersHP >= 1 && wheelHP < wheelMaxHP)
+		{
+			wheelHP += 2;
+			recoveryItersHP = 0;
+		}
+		
+		if (recoveryItersSP >= 1 && wheelSP < wheelMaxSP)
+		{
+			wheelSP++;
+			recoveryItersSP = 0;
 		}
 		
 		if (wheelHP <= 0)
@@ -1141,6 +1193,7 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 			{
 				ySpeed = -60.0f;
 				playSound("dash.wav");
+				wheelSP -= 10;
 			}
 			
 			jumpRecharge = 0;
@@ -1157,6 +1210,7 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 			if (wheel.getLinearVelocity().y <= 100.0f)
 			{
 				playSound("dash.wav");
+				wheelSP -= 10;
 			}
 			wheel.setLinearVelocity(new Vec2(wheel.getLinearVelocity().x, 100.0f));
 		}
@@ -1337,8 +1391,10 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 	
 	private void shoot()
 	{
-		//if (nBullets > 0)
-		//{
+		if (nBullets <= 0)
+		{
+			return;
+		}
 			double angle = Math.atan2(mouseYOnWorld-wheel.getWorldCenter().y,mouseXOnWorld-wheel.getWorldCenter().x)*(180.0/Math.PI);
 			double radians = angle * (Math.PI / 180);
 			bulletBodyDef.position = new Vec2((int) (wheelX + ((radius + 10 + (0.25 * Math.abs(wheel.getLinearVelocity().x))) * Math.cos(radians))), 
@@ -1359,6 +1415,7 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 			cameraY += 12.5 * (Math.sin(ang));
 			
 			playSound("shoot.wav");
+			nBullets--;
 					
 		//}
 	}
@@ -1366,6 +1423,7 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 	private void respawn()
 	{
 		wheelHP = wheelMaxHP;
+		wheelSP = wheelMaxSP;
 		world.destroyBody(wheel);
 		wheel = world.createBody(wheelBodyDef);
 		wheel.createShape(wheelDef);
@@ -1379,13 +1437,15 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 	{
 		if (targets.size() < 1)
 		{
-			int randX = (int)(Math.random() * (3000 - 1000) + 1000);
-			int randY = (int)(Math.random() * (600 - 0) + 0);
-			targetBodyDef.position.set(randX, randY);
-			Body target = world.createBody(targetBodyDef);
-			target.createShape(targetDef);
-			target.setMassFromShapes();
-			targets.add(target);
+			int randX = 0;
+			int randY = 0;
+				randX = (int)(Math.random() * (3000 - 1000) + 1000);
+				randY = (int)(Math.random() * (600 - 0) + 0);
+				targetBodyDef.position.set(randX, randY);
+				Body target = world.createBody(targetBodyDef);
+				target.createShape(targetDef);
+				target.setMassFromShapes();
+				targets.add(target);
 		}
 	}
 	
@@ -1465,9 +1525,9 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 		}
 	}
 	
-	private void spawnSpawns()
+	private void spawnSpawn()
 	{
-		int randX = (int)(Math.random() * (2250 - 1750) + 1750);
+		int randX = (int)(Math.random() * (3000 - 1000) + 1000);
 		
 		CircleDef spawnDef = new CircleDef();
 		BodyDef spawnBodyDef = new BodyDef();
@@ -1476,7 +1536,7 @@ public class Main extends JPanel implements ActionListener, KeyListener, MouseLi
 		spawnDef.friction = 0.0f;
 		spawnDef.restitution = 0.5f;
 		
-		spawnDef.radius = 15f;
+		spawnDef.radius = 20f;
 		spawnBodyDef.position.set(randX, 200);
 		spawnBodyDef.fixedRotation = true;
 		
